@@ -12,8 +12,12 @@ function clock_db(): PDO
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   $db->exec('PRAGMA busy_timeout = 15000');
   // Schema setup only when needed, so concurrent requests don't fight over write locks.
-  $have = (int) $db->query("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('clock_events', 'clock_pins')")->fetchColumn();
-  if ($have === 2) {
+  if ((int) $db->query('PRAGMA user_version')->fetchColumn() >= 2) {
+    return $db;
+  }
+  $db->exec('BEGIN IMMEDIATE');
+  if ((int) $db->query('PRAGMA user_version')->fetchColumn() >= 2) {
+    $db->exec('COMMIT');
     return $db;
   }
   $db->exec(
@@ -35,5 +39,49 @@ function clock_db(): PDO
       locked_until INTEGER NOT NULL DEFAULT 0
     )'
   );
+  $cols = $db->query('PRAGMA table_info(clock_events)')->fetchAll(PDO::FETCH_COLUMN, 1);
+  foreach (['edited_by', 'note'] as $c) {
+    if (!in_array($c, $cols, true)) {
+      $db->exec("ALTER TABLE clock_events ADD COLUMN $c TEXT");
+    }
+  }
+  $db->exec('CREATE TABLE IF NOT EXISTS clock_settings (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+  $db->exec('PRAGMA user_version = 2');
+  $db->exec('COMMIT');
   return $db;
+}
+function clock_setting(PDO $db, string $k, string $default = ''): string
+{
+  $st = $db->prepare('SELECT v FROM clock_settings WHERE k = ?');
+  $st->execute([$k]);
+  $v = $st->fetchColumn();
+  return $v === false ? $default : (string) $v;
+}
+function clock_set(PDO $db, string $k, string $v): void
+{
+  $db->prepare('INSERT INTO clock_settings (k, v) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET v = excluded.v')->execute([$k, $v]);
+}
+function clock_delete_selfie(int $id): void
+{
+  $f = DATA_DIR . '/selfies/' . $id . '.jpg';
+  if (is_file($f)) {
+    @unlink($f);
+  }
+}
+// Removes selfies older than $days (files only; the record stays). Returns count removed.
+function clock_purge_selfies(PDO $db, int $days): int
+{
+  if ($days < 1) {
+    return 0;
+  }
+  $st = $db->prepare('SELECT id FROM clock_events WHERE selfie = 1 AND ts < ?');
+  $st->execute([time() - $days * 86400]);
+  $ids = $st->fetchAll(PDO::FETCH_COLUMN);
+  foreach ($ids as $id) {
+    clock_delete_selfie((int) $id);
+  }
+  if ($ids) {
+    $db->prepare('UPDATE clock_events SET selfie = 0 WHERE selfie = 1 AND ts < ?')->execute([time() - $days * 86400]);
+  }
+  return count($ids);
 }

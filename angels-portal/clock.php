@@ -17,7 +17,7 @@ function emp_photo($n)
 function clock_state(PDO $db, string $key): array
 {
   $start = strtotime('today');
-  $st = $db->prepare('SELECT type, ts FROM clock_events WHERE emp_key = ? AND ts >= ? ORDER BY id');
+  $st = $db->prepare('SELECT type, ts FROM clock_events WHERE emp_key = ? AND ts >= ? ORDER BY ts, id');
   $st->execute([$key, $start]);
   $state = 'out';
   $since = null;
@@ -109,7 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       if ($img === false || strlen($img) > 1024 * 1024 || @getimagesizefromstring($img) === false) {
         json_out(['ok' => false, 'msg' => 'Invalid selfie.'], 400);
       }
-    }    // One write transaction per clock action so simultaneous requests are serialized safely.
+    }
+
+    // One write transaction per clock action so simultaneous requests are serialized safely.
     $db = clock_db();
     $db->exec('BEGIN IMMEDIATE');
     $txOpen = true;
@@ -139,7 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($type, $allowed[$cur], true)) {
       json_out(['ok' => false, 'msg' => 'This action is not allowed for the current status.'], 409);
     }
-
+    if ($img === null && clock_setting($db, 'require_selfie', '0') === '1') {
+      json_out(['ok' => false, 'msg' => 'A selfie is required. Allow camera access and try again.'], 422);
+    }
     $ins = $db->prepare('INSERT INTO clock_events (emp_key, name, type, ts, selfie) VALUES (?, ?, ?, ?, ?)');
     $ins->execute([$key, $name, $type, time(), $img !== null ? 1 : 0]);
     if ($img !== null) {
@@ -172,6 +176,9 @@ try {
 $list = [];
 try {
   $db = clock_db();
+  if (random_int(1, 20) === 1) {
+    clock_purge_selfies($db, (int) clock_setting($db, 'retention_days', '0'));
+  }
   foreach ($emps as $e) {
     $k = emp_key($e['name']);
     $list[] = ['key' => $k, 'name' => $e['name'], 'photo' => emp_photo($e['name'])] + clock_state($db, $k);

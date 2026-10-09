@@ -1623,3 +1623,61 @@ html {
   line-height: 1;
   cursor: pointer;
 }
+.ca-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+  margin: 10px 0 18px;
+}
+.ca-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: #51607a;
+}
+.ca-form .ca-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.ca-form select,
+.ca-form input[type='date'],
+.ca-form input[type='datetime-local'],
+.ca-num,
+.ca-fix input {
+  padding: 8px 10px;
+  border: 1px solid #c8d1de;
+  border-radius: 8px;
+  font: inherit;
+}
+.ca-num {
+  width: 90px;
+}
+.ca-fix form {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.btn.danger {
+  background: #c0392b;
+  color: #fff;
+}
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e8eefb;
+  color: #2d4a8a;
+  font-size: 12px;
+}
+.badge.warn {
+  background: #fdecd5;
+  color: #9a5b00;
+}
+.ca-pager {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
