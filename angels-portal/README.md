@@ -21,7 +21,7 @@ This is a standalone PHP/XAMPP dashboard that reads the EXISTING Google Sheets t
 - This project does not require MySQL because it reads existing Google Sheets data. Your earlier PHP/MySQL app remains separate and untouched.
 
 ## Features
-- Time Clock (`clock.php`): kiosk-style Clock in / Start break / End break / Clock out na may selfie. Naka-save sa SQLite (`DATA_DIR/clock.sqlite`) at hiwalay sa Google Sheet at payroll. Bawat employee ay may PIN (4-6 numero) na itinatakda ng admin sa **Clock Admin** (`clock-admin.php`), kaya hindi na kailangan ng admin login sa kiosk. Records at selfie ay nasa Clock Admin din (admin lang).
+- Time Clock (`clock.php`): kiosk-style Clock in / Start break / End break / Clock out na may selfie. Pagkatapos ng successful na action, ipinapakita ang oras at petsa ng record nang 10 segundo bago bumalik sa employee list. Naka-save sa SQLite (`DATA_DIR/clock.sqlite`) at hiwalay sa Google Sheet at payroll. Bawat employee ay may PIN (4-6 numero) na itinatakda ng admin sa **Clock Admin** (`clock-admin.php`), kaya hindi na kailangan ng admin login sa kiosk. Records at selfie ay nasa Clock Admin din (admin lang).
 
 Admin login, forgot password (recovery key), dashboard, weekly tracker, employee directory and profile (with optional profile photo upload: JPG, PNG or WEBP), settings. View-only: all edits stay in Google Sheets.
 

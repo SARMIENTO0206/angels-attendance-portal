@@ -363,6 +363,57 @@
 .clock-msg.bad {
   color: #b42318;
 }
+.clock-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(20, 38, 77, 0.55);
+}
+.clock-confirm[hidden] {
+  display: none;
+}
+.clock-confirm-card {
+  box-sizing: border-box;
+  width: min(100%, 380px);
+  padding: 30px 24px;
+  border-radius: 20px;
+  background: #fff;
+  text-align: center;
+  box-shadow: 0 18px 60px rgba(16, 30, 58, 0.25);
+}
+.clock-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: #e7f8ed;
+  color: #168447;
+  font-size: 30px;
+  font-weight: 700;
+}
+.clock-confirm-card h2 {
+  margin: 0 0 8px;
+  color: #14264d;
+  font-size: 22px;
+}
+.clock-confirm-card p {
+  margin: 6px 0;
+  color: #3c4a63;
+}
+.clock-confirm-card .clock-confirm-time {
+  margin: 16px 0;
+  color: #14264d;
+  font-size: 20px;
+  font-weight: 700;
+}
+.clock-confirm-card small {
+  color: #6b7a96;
+}
 .clock-thumb {
   width: 44px;
   height: 44px;

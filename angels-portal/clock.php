@@ -148,11 +148,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       json_out(['ok' => false, 'msg' => 'A selfie is required. Allow camera access and try again.'], 422);
     }
     $ins = $db->prepare('INSERT INTO clock_events (emp_key, name, type, ts, selfie) VALUES (?, ?, ?, ?, ?)');
-    $ins->execute([$key, $name, $type, time(), $img !== null ? 1 : 0]);
+    $eventTime = time();
+    $ins->execute([$key, $name, $type, $eventTime, $img !== null ? 1 : 0]);
     if ($img !== null) {
       file_put_contents(DATA_DIR . '/selfies/' . $db->lastInsertId() . '.jpg', $img);
     }
-    json_out(['ok' => true]);
+    json_out([
+      'ok' => true,
+      'action' => $labels[$type],
+      'date' => date('F j, Y', $eventTime),
+      'time' => date('g:i A', $eventTime),
+    ]);
   } catch (Throwable $e) {
     error_log($e->getMessage());
     if (!empty($txOpen)) {
@@ -318,9 +324,19 @@ $company = "Angel's Glass & Aluminum Services";
     </section>
     <canvas id="snap" hidden></canvas>
   </main>
+  <div class="clock-confirm" id="confirm" hidden role="status" aria-live="polite">
+    <section class="clock-confirm-card">
+      <span class="clock-confirm-icon" aria-hidden="true">&#10003;</span>
+      <h2 id="confirm-title"></h2>
+      <p id="confirm-name"></p>
+      <p class="clock-confirm-time" id="confirm-time"></p>
+      <small>Returning to employee list in 10 seconds...</small>
+    </section>
+  </div>
   <script>
     const video = document.getElementById('cam');
     const msg = document.getElementById('msg');
+    const employeeName = <?= json_encode($sel['name']) ?>;
     let camOk = false;
     const camReady = navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: 'user' }, audio: false })
@@ -384,7 +400,15 @@ $company = "Angel's Glass & Aluminum Services";
           const r = await fetch('clock.php', { method: 'POST', body });
           const d = await r.json();
           if (d.ok) {
-            location.href = 'clock.php';
+            document.getElementById('confirm-title').textContent = `${d.action} successful`;
+            document.getElementById('confirm-name').textContent = employeeName;
+            document.getElementById('confirm-time').textContent = `${d.date} at ${d.time}`;
+            document.getElementById('confirm').hidden = false;
+            msg.textContent = '';
+            video.srcObject?.getTracks().forEach((track) => track.stop());
+            window.setTimeout(() => {
+              location.href = 'clock.php';
+            }, 10000);
             return;
           }
           msg.className = 'clock-msg bad';
