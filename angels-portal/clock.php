@@ -303,7 +303,7 @@ $company = "Angel's Glass & Aluminum Services";
     const video = document.getElementById('cam');
     const msg = document.getElementById('msg');
     let camOk = false;
-    navigator.mediaDevices
+    const camReady = navigator.mediaDevices
       ?.getUserMedia({ video: { facingMode: 'user' }, audio: false })
       .then((s) => {
         video.srcObject = s;
@@ -327,6 +327,7 @@ $company = "Angel's Glass & Aluminum Services";
       setInterval(tick, 1000);
     }
     async function snapshot() {
+      await camReady;
       for (let i = 0; camOk && !video.videoWidth && i < 20; i++) {
         await new Promise((r) => setTimeout(r, 100));
       }
