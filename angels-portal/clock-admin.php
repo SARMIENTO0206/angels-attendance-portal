@@ -60,7 +60,7 @@ page_start('Clock Admin', 'clock-admin.php');
           <td><?= h($labels[$r['type']] ?? $r['type']) ?></td>
           <td>
             <?php if ($r['selfie']): ?>
-              <a href="clock.php?selfie=<?= (int) $r['id'] ?>" target="_blank"><img class="clock-thumb" src="clock.php?selfie=<?= (int) $r['id'] ?>" alt="Selfie"></a>
+              <a href="clock.php?selfie=<?= (int) $r['id'] ?>" class="selfie-open"><img class="clock-thumb" src="clock.php?selfie=<?= (int) $r['id'] ?>" alt="Selfie"></a>
             <?php else: ?>&mdash;<?php endif; ?>
           </td>
         </tr>
@@ -69,7 +69,30 @@ page_start('Clock Admin', 'clock-admin.php');
     </tbody>
   </table>
 </div>
+<div class="selfie-modal" id="selfieModal" hidden>
+  <button type="button" class="selfie-x" id="selfieX" aria-label="Close">&times;</button>
+  <img id="selfieBig" alt="Selfie">
+</div>
 <script>
+  const modal = document.getElementById('selfieModal');
+  const closeModal = () => {
+    modal.hidden = true;
+    document.getElementById('selfieBig').removeAttribute('src');
+  };
+  document.querySelectorAll('.selfie-open').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('selfieBig').src = a.href;
+      modal.hidden = false;
+    });
+  });
+  document.getElementById('selfieX').addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeModal();
+  });
   document.querySelectorAll('.pin-save').forEach((b) => {
     b.addEventListener('click', async () => {
       const td = b.parentElement;

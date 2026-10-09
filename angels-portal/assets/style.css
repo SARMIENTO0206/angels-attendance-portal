@@ -1592,3 +1592,34 @@ html {
   object-fit: cover;
   border-radius: 8px;
 }
+.selfie-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 25, 0.85);
+}
+.selfie-modal[hidden] {
+  display: none;
+}
+.selfie-modal img {
+  max-width: 92vw;
+  max-height: 85vh;
+  border-radius: 12px;
+}
+.selfie-x {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #111;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
