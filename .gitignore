@@ -1,0 +1,15 @@
+# Secrets and local config - never commit
+angels-portal/config/settings.php
+angels-portal/config/local.json
+*.json
+!composer.json
+
+# Service account keys
+angels-sa.json
+*service-account*.json
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+*.log
