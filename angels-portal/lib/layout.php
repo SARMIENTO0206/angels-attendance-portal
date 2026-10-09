@@ -22,6 +22,8 @@ function page_start($title, $active)
      '<circle cx="9" cy="8" r="3.6"/><path d="M2 20c0-3.6 3-6 7-6s7 2.4 7 6z"/><circle cx="17.5" cy="9" r="2.6"/><path d="M18 14c2.7.2 4.5 2 4.5 5h-4.2c0-2-.6-3.6-1.8-4.6z"/>',
    'clock.php' =>
      '<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" fill="none"/>',
+   'clock-admin.php' =>
+     '<path d="M4 4h16v4H4zM4 10h16v4H4zM4 16h10v4H4z"/>',
    'settings.php' =>
      '<circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2l2 3 3.5-.5.8 3.4 3.2 1.6-1.4 3.3 1.4 3.3-3.2 1.6-.8 3.4L14 19l-2 3-2-3-3.5.5-.8-3.4L2.5 13.5 3.9 10.2 2.5 6.9l3.200-1.600.8-3.400L10 5z" fill="none" stroke="currentColor" stroke-width="1.6"/>',
  ];
@@ -31,6 +33,7 @@ function page_start($title, $active)
      'tracker.php' => 'Weekly Tracker',
      'employees.php' => 'Employees',
      'clock.php' => 'Time Clock',
+     'clock-admin.php' => 'Clock Admin',
      'settings.php' => 'Settings',
    ]
    as $u => $l

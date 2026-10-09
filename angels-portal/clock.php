@@ -1,11 +1,8 @@
 <?php require __DIR__ . '/lib/bootstrap.php';
+require __DIR__ . '/lib/clock.php';
 require __DIR__ . '/lib/sheets.php';
 $isAdmin = !empty($_SESSION['logged_in']);
 
-function emp_key($n)
-{
-  return substr(sha1(strtolower(trim((string) $n))), 0, 16);
-}
 function emp_photo($n)
 {
   foreach (['jpg', 'png', 'webp'] as $x) {
@@ -15,34 +12,6 @@ function emp_photo($n)
     }
   }
   return null;
-}
-function clock_db(): PDO
-{
-  if (!is_dir(DATA_DIR . '/selfies')) {
-    @mkdir(DATA_DIR . '/selfies', 0755, true);
-  }
-  $db = new PDO('sqlite:' . DATA_DIR . '/clock.sqlite');
-  $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-  $db->exec(
-    'CREATE TABLE IF NOT EXISTS clock_events (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      emp_key TEXT NOT NULL,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL,
-      ts INTEGER NOT NULL,
-      selfie INTEGER NOT NULL DEFAULT 0
-    )'
-  );
-  $db->exec('CREATE INDEX IF NOT EXISTS idx_clock_emp_ts ON clock_events (emp_key, ts)');
-  $db->exec(
-    'CREATE TABLE IF NOT EXISTS clock_pins (
-      emp_key TEXT PRIMARY KEY,
-      pin_hash TEXT NOT NULL,
-      fails INTEGER NOT NULL DEFAULT 0,
-      locked_until INTEGER NOT NULL DEFAULT 0
-    )'
-  );
-  return $db;
 }
 // Status ng employee ngayong araw: out, in, o break
 function clock_state(PDO $db, string $key): array
@@ -175,92 +144,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
 }
 
-// Admin log ng clock records
 if (isset($_GET['log'])) {
-  require_login();
-  require __DIR__ . '/lib/layout.php';
-  $rows = [];
-  $pinRows = [];
-  $error = '';
-  try {
-    $db = clock_db();
-    $rows = $db->query('SELECT * FROM clock_events ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
-    $hasPin = $db->query('SELECT emp_key FROM clock_pins')->fetchAll(PDO::FETCH_COLUMN);
-    foreach (attendance_data($config)['employees'] as $e) {
-      $pinRows[] = ['key' => emp_key($e['name']), 'name' => $e['name'], 'has' => in_array(emp_key($e['name']), $hasPin, true)];
-    }
-  } catch (Throwable $e) {
-    error_log($e->getMessage());
-    $error = 'Could not load clock records.';
-  }
-  page_start('Clock Records', 'clock.php');
-  ?>
-  <h1>Clock Records</h1>
-  <h2>Employee PINs</h2>
-  <p class="muted">Each employee needs a PIN (4-6 digits) to clock in. Enter a new PIN to replace an existing one.</p>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Employee</th><th>Status</th><th>New PIN</th></tr></thead>
-      <tbody>
-        <?php foreach ($pinRows as $p): ?>
-          <tr>
-            <td><?= h($p['name']) ?></td>
-            <td><?= $p['has'] ? 'PIN set' : 'No PIN yet' ?></td>
-            <td>
-              <input class="pin-in" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" placeholder="PIN" data-k="<?= h($p['key']) ?>">
-              <button class="btn pin-save" type="button">Save</button>
-              <span class="pin-msg"></span>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
-  <script>
-    document.querySelectorAll('.pin-save').forEach((b) => {
-      b.addEventListener('click', async () => {
-        const td = b.parentElement;
-        const inp = td.querySelector('.pin-in');
-        const out = td.querySelector('.pin-msg');
-        const r = await fetch('clock.php', {
-          method: 'POST',
-          body: new URLSearchParams({ csrf: <?= json_encode(csrf()) ?>, type: 'set_pin', emp: inp.dataset.k, pin: inp.value }),
-        });
-        const d = await r.json();
-        out.textContent = d.ok ? ' Saved' : ' ' + (d.msg || 'Error');
-        if (d.ok) {
-          inp.value = '';
-          td.previousElementSibling.textContent = 'PIN set';
-        }
-      });
-    });
-  </script>
-  <h2>Records</h2>
-  <p class="muted">Latest 200 clock events from the Time Clock. Separate from the Google Sheet and payroll.</p>
-  <p><a class="btn" href="clock.php">Open Time Clock</a></p>
-  <?php if ($error): ?><p class="alert"><?= h($error) ?></p><?php endif; ?>
-  <div class="table-wrap">
-    <table>
-      <thead><tr><th>Date and time</th><th>Employee</th><th>Action</th><th>Selfie</th></tr></thead>
-      <tbody>
-        <?php foreach ($rows as $r): ?>
-          <tr>
-            <td><?= h(date('M j, Y g:i A', (int) $r['ts'])) ?></td>
-            <td><?= h($r['name']) ?></td>
-            <td><?= h($labels[$r['type']] ?? $r['type']) ?></td>
-            <td>
-              <?php if ($r['selfie']): ?>
-                <a href="clock.php?selfie=<?= (int) $r['id'] ?>" target="_blank"><img class="clock-thumb" src="clock.php?selfie=<?= (int) $r['id'] ?>" alt="Selfie"></a>
-              <?php else: ?>&mdash;<?php endif; ?>
-            </td>
-          </tr>
-        <?php endforeach; ?>
-        <?php if (!$rows): ?><tr><td colspan="4">No records yet.</td></tr><?php endif; ?>
-      </tbody>
-    </table>
-  </div>
-  <?php
-  page_end();
+  header('Location: clock-admin.php');
   exit();
 }
 
@@ -308,7 +193,7 @@ $company = "Angel's Glass & Aluminum Services";
   <?php endif; ?>
   <div class="clock-title"><?= h($company) ?></div>
   <?php if ($isAdmin): ?>
-    <a class="clock-icon" href="clock.php?log=1" aria-label="Records">&#9776;</a>
+    <a class="clock-icon" href="clock-admin.php" aria-label="Clock Admin">&#9776;</a>
   <?php else: ?>
     <span class="clock-icon"></span>
   <?php endif; ?>
