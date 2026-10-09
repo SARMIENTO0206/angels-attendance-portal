@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $msg = ['err', 'Hindi na-save.'];
   if ($a === 'company') {
     $ok = $save([
-      'company_name' => $clip($_POST['company_name'] ?? '', 80) ?: "Angel's Aluminum & Glass Services",
+      'company_name' => $clip($_POST['company_name'] ?? '', 80) ?: "Angel's Glass & Aluminum Services",
       'site_title' => $clip($_POST['site_title'] ?? '', 80) ?: "Angel's Attendance Portal",
     ]);
     $msg = [
@@ -76,7 +76,7 @@ try {
 }
 $id = (string) ($config['spreadsheet_id'] ?? '');
 $mask = strlen($id) > 10 ? substr($id, 0, 5) . str_repeat('•', 11) . substr($id, -4) : 'Not set';
-$cn = $config['company_name'] ?? "Angel's Aluminum & Glass Services";
+$cn = $config['company_name'] ?? "Angel's Glass & Aluminum Services";
 $st = $config['site_title'] ?? "Angel's Attendance Portal";
 $wd = $config['work_days'] ?? 'Monday – Saturday';
 $wh = $config['work_hours'] ?? '8:00 AM – 5:00 PM';

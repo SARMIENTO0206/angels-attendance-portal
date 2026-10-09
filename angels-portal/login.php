@@ -31,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <section class="lg-hero">
  <div class="lg-line"></div>
  <h2>ANGEL’S</h2>
- <h3>ALUMINUM &amp; GLASS SERVICES</h3>
+ <h3>GLASS &amp; ALUMINUM SERVICES</h3>
  <p>Attendance &amp; Payroll Portal</p>
  <ul class="lg-feats">
   <li><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Secure<br>Access</span></li>

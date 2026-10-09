@@ -1777,3 +1777,12 @@ html {
     grid-template-columns: 1fr;
   }
 }
+@media (min-width: 761px) {
+  .sidebar .logo-side {
+    margin: 0 auto 14px;
+  }
+  .sidebar .brand,
+  .sidebar .side-sub {
+    text-align: center;
+  }
+}

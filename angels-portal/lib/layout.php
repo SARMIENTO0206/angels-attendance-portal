@@ -9,10 +9,10 @@ function page_start($title, $active)
   <title>
   <?= h(
   $title,
-) ?> | Angel's Aluminum & Glass Services</title>
+) ?> | Angel's Glass & Aluminum Services</title>
   <link rel="stylesheet" href="assets/style.css">
   </head>
-<body><div class="shell"><aside class="sidebar"><img class="logo-side" src="assets/logo.png" alt="Angel's logo"><div class="brand">ANGEL'S</div><div class="side-sub">ALUMINUM & GLASS SERVICES</div><nav><?php
+<body><div class="shell"><aside class="sidebar"><img class="logo-side" src="assets/logo.png" alt="Angel's logo"><div class="brand">ANGEL'S</div><div class="side-sub">GLASS & ALUMINUM SERVICES</div><nav><?php
  $ic = [
    'index.php' =>
      '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/>',
@@ -45,5 +45,5 @@ function page_start($title, $active)
 }
 function page_end()
 {
-  ?><footer>Angel's Aluminum & Glass Services • Data stays in Google Sheets • No payroll changes performed</footer></main></div></body></html><?php
+  ?><footer>Angel's Glass & Aluminum Services • Data stays in Google Sheets • No payroll changes performed</footer></main></div></body></html><?php
 }
