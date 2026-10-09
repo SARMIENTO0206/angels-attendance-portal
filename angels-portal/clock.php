@@ -326,8 +326,12 @@ $company = "Angel's Glass & Aluminum Services";
       tick();
       setInterval(tick, 1000);
     }
-    function snapshot() {
+    async function snapshot() {
+      for (let i = 0; camOk && !video.videoWidth && i < 20; i++) {
+        await new Promise((r) => setTimeout(r, 100));
+      }
       if (!camOk || !video.videoWidth) return '';
+      if (video.paused) await video.play().catch(() => {});
       const c = document.getElementById('snap');
       const w = 480;
       c.width = w;
@@ -347,12 +351,13 @@ $company = "Angel's Glass & Aluminum Services";
         all.forEach((b) => (b.disabled = true));
         msg.className = 'clock-msg';
         msg.textContent = 'Saving...';
+        const selfie = await snapshot();
         const body = new URLSearchParams({
           csrf: <?= json_encode(csrf()) ?>,
           emp: <?= json_encode($sel['key']) ?>,
           type: btn.dataset.t,
           pin,
-          selfie: snapshot(),
+          selfie,
         });
         try {
           const r = await fetch('clock.php', { method: 'POST', body });
