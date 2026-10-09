@@ -1,6 +1,7 @@
 <?php require __DIR__ . '/lib/bootstrap.php';
 require_login();
 require __DIR__ . '/lib/sheets.php';
+require __DIR__ . '/lib/attendance.php';
 $data = ['week' => '—', 'employees' => []];
 $error = '';
 try {
@@ -17,24 +18,7 @@ foreach ($employees as $e) {
   $hours += (float) str_replace(',', '', $e['work']);
   $ot += (float) str_replace(',', '', $e['ot']);
 }
-function cat($s)
-{
-  $s = strtoupper(trim($s));
-  if ($s === '') {
-    return 'off';
-  }
-  if (in_array($s, ['PRESENT', 'HOLIDAY', 'RDOT'], true)) {
-    return 'present';
-  }
-  if ($s === 'ABSENT') {
-    return 'absent';
-  }
-  if (in_array($s, ['LATE', 'HALF DAY'], true)) {
-    return 'half';
-  }
-  return 'off';
-}
-$start = DateTime::createFromFormat('m/d/Y', trim((string) $data['week'])) ?: null;
+$start = attendance_week_start((string) $data['week']);
 $names = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 $dates = [];
 for ($i = 0; $i < 7; $i++) {
@@ -52,27 +36,23 @@ for ($i = 0; $i < 7; $i++) {
   $perDay[$i] = ['present' => 0, 'absent' => 0, 'half' => 0, 'off' => 0];
   foreach ($employees as $e) {
     $s = $e['days'][$names[$i]]['status'] ?? '';
-    $c = cat($s);
+    $c = attendance_status_category((string) $s);
     $perDay[$i][$c]++;
     if (trim($s) !== '') {
       $sum[$c]++;
     }
   }
 }
-$today = ((int) date('N')) - 1;
-if ($start) {
-  $diff = (int) $start->diff(new DateTime('today'))->format('%r%a');
-  if ($diff < 0 || $diff > 6) {
-    $today = -1;
-    for ($i = 6; $i >= 0; $i--) {
-      if ($perDay[$i]['present'] + $perDay[$i]['absent'] + $perDay[$i]['half'] > 0) {
-        $today = $i;
-        break;
-      }
-    }
-  }
-}
-$tp = $today >= 0 ? $perDay[$today] : ['present' => 0, 'absent' => 0, 'half' => 0];
+$daily = attendance_dashboard_summary($employees, $names, $start, new DateTimeImmutable('today'));
+$tp = $daily['counts'];
+$dailyLabel = $daily['date'] ? ($daily['is_today'] ? 'Today' : $daily['date']->format('M j')) : '';
+$dailyNote = $daily['has_data']
+  ? 'Out of ' . $tot . ' employees'
+  : ($daily['date']
+    ? 'No attendance data recorded for ' . $daily['date']->format('M j')
+    : ($start
+      ? 'No attendance data recorded for this week'
+      : 'Tracker week date unavailable'));
 $shifts = array_sum($sum);
 $pct = function ($n) use ($shifts) {
   return $shifts ? round(($n / $shifts) * 100, 1) : 0;
@@ -101,13 +81,19 @@ page_start('Attendance', 'index.php');
   $error
 ): ?><div class="error"><?= h(
   $error,
-) ?></div><?php endif; ?><section class="stats six"><article><div class="stat-label">Total Employees</div><div class="stat-number"><?= $tot ?></div><small>Registered in tracker</small></article><article><div class="stat-label">Present Today</div><div class="stat-number c-green"><?= $tp[
+) ?></div><?php endif; ?><section class="stats six"><article><div class="stat-label">Total Employees</div><div class="stat-number"><?= $tot ?></div><small>Registered in tracker</small></article><article><div class="stat-label">Present<?= $dailyLabel ? ' ' . h(
+  $dailyLabel,
+) : '' ?></div><div class="stat-number c-green"><?= $tp[
   'present'
-] ?></div><small>Out of <?= $tot ?> employees</small></article><article><div class="stat-label">Absent Today</div><div class="stat-number c-red"><?= $tp[
+] ?></div><small><?= h($dailyNote) ?></small></article><article><div class="stat-label">Absent<?= $dailyLabel ? ' ' . h(
+  $dailyLabel,
+) : '' ?></div><div class="stat-number c-red"><?= $tp[
    'absent'
- ] ?></div><small>Out of <?= $tot ?> employees</small></article><article><div class="stat-label">Late / Half Day</div><div class="stat-number c-purple"><?= $tp[
+ ] ?></div><small><?= h($dailyNote) ?></small></article><article><div class="stat-label">Late / Half Day<?= $dailyLabel
+  ? ' (' . h($dailyLabel) . ')'
+  : '' ?></div><div class="stat-number c-purple"><?= $tp[
    'half'
- ] ?></div><small>Out of <?= $tot ?> employees</small></article><article><div class="stat-label">Regular Hours</div><div class="stat-number"><?= number_format(
+ ] ?></div><small><?= h($dailyNote) ?></small></article><article><div class="stat-label">Regular Hours</div><div class="stat-number"><?= number_format(
    $hours,
    2,
  ) ?></div><small>Current payroll week</small></article><article><div class="stat-label">Overtime Hours</div><div class="stat-number c-orange"><?= number_format(

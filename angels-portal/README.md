@@ -16,7 +16,18 @@ This is a standalone PHP/XAMPP dashboard that reads the EXISTING Google Sheets t
 - The spreadsheet is the source of truth. This dashboard reads the `ATTENDANCE TRACKER` sheet, B4:X200, with employee rows starting at row 8. If the original layout changes, update `lib/sheets.php`.
 - Payroll is read as **formatted text**, not recalculated here. It may include Philippine peso symbols and commas.
 - API writes do not trigger Google Apps Script simple `onEdit(e)` triggers. To safely edit attendance from PHP later, a carefully authenticated Apps Script endpoint must call the appropriate existing processing logic and be tested on a copy. Do not directly write status/time cells through the Sheets API and assume payroll will recalculate.
-- Google service account keys and payroll information are sensitive. This demo is suitable for local use with a strong admin password; before public hosting add HTTPS, rate limiting, stronger authentication, and proper deployment security.
+- Google service account keys and payroll information are sensitive. The admin login and recovery form allow five attempts per IP in a rolling 15-minute window; the limit is stored in `DATA_DIR` and requires that directory to be writable. Use HTTPS with a strong admin password before public hosting.
+- `health.php` returns HTTP 200 only when the app can read attendance data and `DATA_DIR` is writable; failures return HTTP 503 and are written to the PHP error log. Add this URL to an uptime monitor that alerts on non-200 responses, and configure the host to retain and alert on PHP error logs.
+- Apache protections block direct access to `config/` and prevent script execution or access to script-like files in uploads. Nginx does not read `.htaccess`; add equivalent rules to the site's server block:
+
+  ```nginx
+  location ^~ /config/ { deny all; }
+  location ~* ^/uploads/.*\.(php[0-9]*|phtml|pht|phar|phps|cgi|pl|py|sh|html?|shtml)$ { deny all; }
+  location ~* ^/uploads/.*\.htaccess$ { deny all; }
+  location ~ /\.(?!well-known) { deny all; }
+  ```
+
+- Run the local test suite with `php tests/run.php`. GitHub Actions runs the PHP syntax checks and tests on pushes and pull requests.
 - If Google Sheets API reports 403, verify service account Viewer sharing, API enablement, and project configuration.
 - This project does not require MySQL because it reads existing Google Sheets data. Your earlier PHP/MySQL app remains separate and untouched.
 
@@ -30,11 +41,11 @@ Employee photos are saved in `uploads/employees/` (not in Git) and are matched b
 ## Deploying from GitHub
 GitHub Pages **cannot** run PHP. Use GitHub to store the code and a PHP host (shared hosting such as Hostinger, or a VPS) to run it.
 
-1. Create a **private** repo and push this folder. `.gitignore` already excludes `config/settings.php`, `config/local.json`, and any service-account `*.json` key. Check `git status` before every commit.
+1. Keep credentials out of Git. `.gitignore` excludes `config/settings.php`, `config/local.json`, and JSON key files; verify every commit and remember that this repository is public.
 2. On the host (PHP 8+, `curl` and `openssl` enabled, HTTPS on), upload or `git pull` the `angels-portal` folder.
 3. Upload the service-account key **outside** the public web folder and note its absolute path.
-4. Create `config/settings.php` from `config/settings.example.php` (spreadsheet ID, key path, admin hash). Make sure `config/` is writable by PHP so Settings can write `config/local.json`.
-5. Confirm `config/.htaccess` is honored (Apache) or block `/config` in your server config (nginx).
+4. Create `config/settings.php` from `config/settings.example.php` (spreadsheet ID, key path, admin hash). Make sure `config/` is writable by PHP so Settings, rate limiting, and password recovery can write their data.
+5. Confirm `config/.htaccess` is honored (Apache) or block `/config` and script-like files under `/uploads/` in your server config (nginx).
 6. Share the Google Sheet with the service account as **Viewer** and set general access to **Restricted**.
 7. Generate a new recovery key for forgot-password: set `recovery_hash` in `config/local.json` to `password_hash('YOUR-KEY', PASSWORD_DEFAULT)`.
 8. Change the default admin password, and delete unused service-account keys in Google Cloud.
@@ -49,3 +60,4 @@ If a key or password was ever committed, rotate it (new key, new password) - del
 3. Settings -> Volumes -> mount path /data (dito naka-save ang Settings, password at employee photos).
 4. Settings -> Networking -> Generate Domain (port 8080).
 5. I-share ang Google Sheet sa service account email bilang Viewer.
+6. Mag-set up ng uptime monitor para sa deployed na `health.php` URL at alert kapag hindi HTTP 200; tingnan din ang PHP error logs kapag pumalya.

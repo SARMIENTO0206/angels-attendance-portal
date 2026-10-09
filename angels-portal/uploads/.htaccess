@@ -1,3 +1,8 @@
-<FilesMatch "\.(php|phtml|phar|html?)$">
+Options -Indexes -ExecCGI
+RemoveHandler .php .php3 .php4 .php5 .php7 .php8 .phtml .pht .phar .phps .cgi .pl .py .sh
+<FilesMatch "(?i)\.(php[0-9]*|phtml|pht|phar|phps|cgi|pl|py|sh|html?|shtml)$">
+Require all denied
+</FilesMatch>
+<FilesMatch "^\.">
 Require all denied
 </FilesMatch>

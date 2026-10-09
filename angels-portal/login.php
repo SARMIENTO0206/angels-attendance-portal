@@ -1,4 +1,5 @@
 <?php require __DIR__ . '/lib/bootstrap.php';
+require __DIR__ . '/lib/auth.php';
 if (!empty($_SESSION['logged_in'])) {
   header('Location: index.php');
   exit();
@@ -8,16 +9,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   verify_csrf();
   $username = (string) ($_POST['username'] ?? '');
   $pw = (string) ($_POST['password'] ?? '');
-  if (
-    hash_equals((string) $config['admin_username'], $username) &&
+  if (!auth_attempt_allowed('login')) {
+    http_response_code(429);
+    header('Retry-After: 900');
+    $error = 'Masyadong maraming subok. Subukan ulit pagkalipas ng 15 minuto.';
+  } elseif (
+    hash_equals((string) ($config['admin_username'] ?? ''), $username) &&
+    !empty($config['admin_password_hash']) &&
     password_verify($pw, (string) $config['admin_password_hash'])
   ) {
+    auth_clear_attempts('login');
     session_regenerate_id(true);
     $_SESSION['logged_in'] = true;
     header('Location: index.php');
     exit();
+  } else {
+    $error = 'Invalid username or password.';
   }
-  $error = 'Invalid username or password.';
 }
 ?><!doctype html>
   <html lang="en">

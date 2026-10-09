@@ -1,17 +1,18 @@
 <?php require __DIR__ . '/lib/bootstrap.php';
+require __DIR__ . '/lib/auth.php';
 $msg = null;
 $done = false;
-$_SESSION['fp_try'] = $_SESSION['fp_try'] ?? 0;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   verify_csrf();
   $key = strtoupper(trim((string) ($_POST['key'] ?? '')));
   $new = (string) ($_POST['new'] ?? '');
   $cf = (string) ($_POST['confirm'] ?? '');
   $rh = (string) ($config['recovery_hash'] ?? '');
-  if ($_SESSION['fp_try'] >= 5) {
-    $msg = 'Masyadong maraming subok. Isara ang browser at subukan ulit mamaya.';
+  if (!auth_attempt_allowed('recovery')) {
+    http_response_code(429);
+    header('Retry-After: 900');
+    $msg = 'Masyadong maraming subok. Subukan ulit pagkalipas ng 15 minuto.';
   } elseif ($rh === '' || !password_verify($key, $rh)) {
-    $_SESSION['fp_try']++;
     $msg = 'Mali ang recovery key.';
   } elseif (strlen($new) < 8) {
     $msg = 'Dapat at least 8 characters ang bagong password.';
@@ -24,8 +25,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (
       file_put_contents($f, json_encode($cur, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX) !== false
     ) {
+      auth_clear_attempts('recovery');
       $done = true;
-      $_SESSION['fp_try'] = 0;
     } else {
       $msg = 'Hindi na-save. I-check ang permission ng config folder.';
     }
