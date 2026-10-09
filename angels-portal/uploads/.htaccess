@@ -1,0 +1,3 @@
+<FilesMatch "\.(php|phtml|phar|html?)$">
+Require all denied
+</FilesMatch>

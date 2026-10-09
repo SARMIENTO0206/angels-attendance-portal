@@ -110,3 +110,5 @@ html{-webkit-text-size-adjust:100%}
  .main{padding:22px 18px}
  .kpis{grid-template-columns:1fr 1fr}
 }
+
+.avwrap{display:flex;flex-direction:column;align-items:center;gap:8px}.avatar{overflow:hidden}.avatar img{width:100%;height:100%;object-fit:cover;display:block}.phform{margin:0}.phbtn{display:inline-block;background:#e8f1fc;color:#2469b6;border:1px solid #cfe0f6;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer}.phbtn:hover{background:#dbe9fb}.phrm{background:none;border:0;color:#c0392b;font-size:12px;cursor:pointer;min-height:0!important;padding:2px}.phrm:hover{box-shadow:none;transform:none;text-decoration:underline}

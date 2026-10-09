@@ -13,3 +13,6 @@ Thumbs.db
 .DS_Store
 .vscode/
 *.log
+
+angels-portal/uploads/employees/*
+!angels-portal/uploads/employees/.gitkeep
