@@ -21,7 +21,9 @@ This is a standalone PHP/XAMPP dashboard that reads the EXISTING Google Sheets t
 - This project does not require MySQL because it reads existing Google Sheets data. Your earlier PHP/MySQL app remains separate and untouched.
 
 ## Features
-Admin login, forgot password (recovery key), dashboard, weekly tracker, employee directory and profile, settings. View-only: all edits stay in Google Sheets.
+Admin login, forgot password (recovery key), dashboard, weekly tracker, employee directory and profile (with optional profile photo upload: JPG, PNG or WEBP), settings. View-only: all edits stay in Google Sheets.
+
+Employee photos are saved in `uploads/employees/` (not in Git) and are matched by employee name, so renaming an employee in the Sheet means re-uploading the photo.
 
 ## Deploying from GitHub
 GitHub Pages **cannot** run PHP. Use GitHub to store the code and a PHP host (shared hosting such as Hostinger, or a VPS) to run it.
@@ -41,6 +43,7 @@ If a key or password was ever committed, rotate it (new key, new password) - del
 
 1. Railway -> New Project -> Deploy from GitHub repo (uses the root Dockerfile).
 2. Variables: SPREADSHEET_ID, GOOGLE_CREDENTIALS_JSON (buong laman ng service-account JSON), ADMIN_PASSWORD_HASH (php -r "echo password_hash('PASSWORD', PASSWORD_DEFAULT);"). Optional: ADMIN_USERNAME, TIMEZONE.
+   Idagdag din ang `DATA_DIR=/data` at `PORT=8080`.
 3. Settings -> Volumes -> mount path /data (dito naka-save ang Settings, password at employee photos).
-4. Settings -> Networking -> Generate Domain.
+4. Settings -> Networking -> Generate Domain (port 8080).
 5. I-share ang Google Sheet sa service account email bilang Viewer.
