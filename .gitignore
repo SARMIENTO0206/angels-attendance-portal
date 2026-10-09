@@ -16,3 +16,6 @@ Thumbs.db
 
 angels-portal/uploads/employees/*
 !angels-portal/uploads/employees/.gitkeep
+
+angels-portal/config/clock.sqlite
+angels-portal/config/selfies/
