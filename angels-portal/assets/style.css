@@ -1793,3 +1793,59 @@ html {
     box-sizing: border-box;
   }
 }
+@media (min-width: 761px) {
+  .lg-body {
+    justify-content: flex-end;
+    padding-top: max(24px, 11vh);
+    background: linear-gradient(100deg, #0a2d63 0%, #144a96 30%, #cfdff3 58%, #f1f6fc 78%, #e4edf9 100%);
+  }
+  .lg-card {
+    margin: 0 8vw 0 0;
+  }
+  .lg-hero {
+    width: 62%;
+    padding: 0 0 0 64px;
+    background:
+      linear-gradient(90deg, rgba(10, 45, 99, 0.55), rgba(10, 45, 99, 0.1) 80%),
+      url('login-bg.jpg') center / cover no-repeat,
+      repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0 2px, transparent 2px 130px),
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.06) 0 2px, transparent 2px 170px),
+      linear-gradient(115deg, #0b3270 0%, #1a5cb0 45%, #7fb2e8 75%, #cfe3f8 100%);
+    -webkit-mask-image: linear-gradient(90deg, #000 70%, transparent);
+    mask-image: linear-gradient(90deg, #000 70%, transparent);
+  }
+  .lg-hero h2 {
+    font-size: 64px;
+  }
+  .lg-hero h3 {
+    font-size: 24px;
+  }
+  .lg-hero p {
+    font-size: 22px;
+    font-weight: 300;
+  }
+  .lg-feats {
+    position: absolute;
+    left: 64px;
+    bottom: 7vh;
+    margin: 0;
+    gap: 0;
+  }
+  .lg-feats li {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 26px;
+    gap: 8px;
+  }
+  .lg-feats li:first-child {
+    padding-left: 0;
+  }
+  .lg-feats svg {
+    width: 34px;
+    height: 34px;
+  }
+  .lg-feats li span {
+    font-size: 15px;
+    line-height: 1.25;
+  }
+}
