@@ -8,8 +8,14 @@ function clock_db(): PDO
   if (!is_dir(DATA_DIR . '/selfies')) {
     @mkdir(DATA_DIR . '/selfies', 0755, true);
   }
-  $db = new PDO('sqlite:' . DATA_DIR . '/clock.sqlite');
+  $db = new PDO('sqlite:' . DATA_DIR . '/clock.sqlite', null, null, [PDO::ATTR_TIMEOUT => 15]);
   $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+  $db->exec('PRAGMA busy_timeout = 15000');
+  // Schema setup only when needed, so concurrent requests don't fight over write locks.
+  $have = (int) $db->query("SELECT COUNT(*) FROM sqlite_master WHERE name IN ('clock_events', 'clock_pins')")->fetchColumn();
+  if ($have === 2) {
+    return $db;
+  }
   $db->exec(
     'CREATE TABLE IF NOT EXISTS clock_events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

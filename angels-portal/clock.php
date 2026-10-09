@@ -40,6 +40,11 @@ function clock_state(PDO $db, string $key): array
 }
 function json_out(array $d, int $code = 200): void
 {
+  global $db, $txOpen;
+  if (!empty($txOpen)) {
+    $txOpen = false;
+    $db->exec('COMMIT');
+  }
   http_response_code($code);
   header('Content-Type: application/json');
   echo json_encode($d);
@@ -95,7 +100,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($name === null) {
       json_out(['ok' => false, 'msg' => 'Employee not found.'], 404);
     }
+    $img = null;
+    if (!empty($_POST['selfie'])) {
+      if (!preg_match('#^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$#', (string) $_POST['selfie'], $m)) {
+        json_out(['ok' => false, 'msg' => 'Invalid selfie.'], 400);
+      }
+      $img = base64_decode($m[1], true);
+      if ($img === false || strlen($img) > 1024 * 1024 || @getimagesizefromstring($img) === false) {
+        json_out(['ok' => false, 'msg' => 'Invalid selfie.'], 400);
+      }
+    }    // One write transaction per clock action so simultaneous requests are serialized safely.
     $db = clock_db();
+    $db->exec('BEGIN IMMEDIATE');
+    $txOpen = true;
     $ps = $db->prepare('SELECT pin_hash, fails, locked_until FROM clock_pins WHERE emp_key = ?');
     $ps->execute([$key]);
     $pr = $ps->fetch(PDO::FETCH_ASSOC);
@@ -122,16 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!in_array($type, $allowed[$cur], true)) {
       json_out(['ok' => false, 'msg' => 'This action is not allowed for the current status.'], 409);
     }
-    $img = null;
-    if (!empty($_POST['selfie'])) {
-      if (!preg_match('#^data:image/jpeg;base64,([A-Za-z0-9+/=]+)$#', (string) $_POST['selfie'], $m)) {
-        json_out(['ok' => false, 'msg' => 'Invalid selfie.'], 400);
-      }
-      $img = base64_decode($m[1], true);
-      if ($img === false || strlen($img) > 1024 * 1024 || @getimagesizefromstring($img) === false) {
-        json_out(['ok' => false, 'msg' => 'Invalid selfie.'], 400);
-      }
-    }
+
     $ins = $db->prepare('INSERT INTO clock_events (emp_key, name, type, ts, selfie) VALUES (?, ?, ?, ?, ?)');
     $ins->execute([$key, $name, $type, time(), $img !== null ? 1 : 0]);
     if ($img !== null) {
@@ -140,6 +148,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     json_out(['ok' => true]);
   } catch (Throwable $e) {
     error_log($e->getMessage());
+    if (!empty($txOpen)) {
+      $txOpen = false;
+      $db->exec('ROLLBACK');
+    }
     json_out(['ok' => false, 'msg' => 'Server error. Please try again.'], 500);
   }
 }
