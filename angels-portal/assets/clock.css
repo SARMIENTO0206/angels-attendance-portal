@@ -217,6 +217,18 @@
 .clock-pill b {
   font-size: 22px;
 }
+.clock-pin {
+  display: block;
+  margin: 0 auto 18px;
+  width: 100%;
+  max-width: 320px;
+  padding: 14px 16px;
+  font-size: 18px;
+  text-align: center;
+  letter-spacing: 6px;
+  border: 1px solid #c8d1de;
+  border-radius: 12px;
+}
 .clock-actions {
   display: flex;
   gap: 12px;

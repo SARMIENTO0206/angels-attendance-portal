@@ -1578,3 +1578,17 @@ html {
   transform: none;
   text-decoration: underline;
 }
+
+.pin-in {
+  width: 84px;
+  padding: 10px 8px;
+  margin-right: 6px;
+  border: 1px solid #c8d1de;
+  border-radius: 10px;
+}
+.clock-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
+}

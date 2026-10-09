@@ -1,6 +1,6 @@
 <?php require __DIR__ . '/lib/bootstrap.php';
-require_login();
 require __DIR__ . '/lib/sheets.php';
+$isAdmin = !empty($_SESSION['logged_in']);
 
 function emp_key($n)
 {
@@ -34,6 +34,14 @@ function clock_db(): PDO
     )'
   );
   $db->exec('CREATE INDEX IF NOT EXISTS idx_clock_emp_ts ON clock_events (emp_key, ts)');
+  $db->exec(
+    'CREATE TABLE IF NOT EXISTS clock_pins (
+      emp_key TEXT PRIMARY KEY,
+      pin_hash TEXT NOT NULL,
+      fails INTEGER NOT NULL DEFAULT 0,
+      locked_until INTEGER NOT NULL DEFAULT 0
+    )'
+  );
   return $db;
 }
 // Status ng employee ngayong araw: out, in, o break
@@ -70,6 +78,7 @@ function json_out(array $d, int $code = 200): void
 }
 
 if (isset($_GET['selfie'])) {
+  require_login();
   $f = DATA_DIR . '/selfies/' . (int) $_GET['selfie'] . '.jpg';
   if (!is_file($f)) {
     http_response_code(404);
@@ -89,6 +98,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   }
   $type = (string) ($_POST['type'] ?? '');
   $key = (string) ($_POST['emp'] ?? '');
+  if ($type === 'set_pin') {
+    if (!$isAdmin) {
+      json_out(['ok' => false, 'msg' => 'Admin login required.'], 403);
+    }
+    $pin = (string) ($_POST['pin'] ?? '');
+    if (!preg_match('/^\d{4,6}$/', $pin) || !preg_match('/^[a-f0-9]{16}$/', $key)) {
+      json_out(['ok' => false, 'msg' => 'PIN must be 4 to 6 digits.'], 400);
+    }
+    $st = clock_db()->prepare(
+      'INSERT INTO clock_pins (emp_key, pin_hash, fails, locked_until) VALUES (?, ?, 0, 0)
+       ON CONFLICT(emp_key) DO UPDATE SET pin_hash = excluded.pin_hash, fails = 0, locked_until = 0'
+    );
+    $st->execute([$key, password_hash($pin, PASSWORD_DEFAULT)]);
+    json_out(['ok' => true]);
+  }
   if (!isset($labels[$type])) {
     json_out(['ok' => false, 'msg' => 'Invalid action.'], 400);
   }
@@ -103,6 +127,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       json_out(['ok' => false, 'msg' => 'Hindi nahanap ang employee.'], 404);
     }
     $db = clock_db();
+    $ps = $db->prepare('SELECT pin_hash, fails, locked_until FROM clock_pins WHERE emp_key = ?');
+    $ps->execute([$key]);
+    $pr = $ps->fetch(PDO::FETCH_ASSOC);
+    if (!$pr) {
+      json_out(['ok' => false, 'msg' => 'Wala pang PIN. Magpa-set sa admin.'], 403);
+    }
+    if ((int) $pr['locked_until'] > time()) {
+      $mins = (int) ceil(((int) $pr['locked_until'] - time()) / 60);
+      json_out(['ok' => false, 'msg' => "Masyadong maraming maling PIN. Subukan ulit pagkalipas ng $mins minuto."], 429);
+    }
+    if (!password_verify((string) ($_POST['pin'] ?? ''), $pr['pin_hash'])) {
+      $fails = (int) $pr['fails'] + 1;
+      $lock = $fails >= 5 ? time() + 300 : 0;
+      $db->prepare('UPDATE clock_pins SET fails = ?, locked_until = ? WHERE emp_key = ?')->execute([
+        $lock ? 0 : $fails,
+        $lock,
+        $key,
+      ]);
+      json_out(['ok' => false, 'msg' => 'Maling PIN.'], 403);
+    }
+    $db->prepare('UPDATE clock_pins SET fails = 0, locked_until = 0 WHERE emp_key = ?')->execute([$key]);
     $cur = clock_state($db, $key)['state'];
     $allowed = ['out' => ['in'], 'in' => ['break_start', 'out'], 'break' => ['break_end', 'out']];
     if (!in_array($type, $allowed[$cur], true)) {
@@ -132,11 +177,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Admin log ng clock records
 if (isset($_GET['log'])) {
+  require_login();
   require __DIR__ . '/lib/layout.php';
   $rows = [];
+  $pinRows = [];
   $error = '';
   try {
-    $rows = clock_db()->query('SELECT * FROM clock_events ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
+    $db = clock_db();
+    $rows = $db->query('SELECT * FROM clock_events ORDER BY id DESC LIMIT 200')->fetchAll(PDO::FETCH_ASSOC);
+    $hasPin = $db->query('SELECT emp_key FROM clock_pins')->fetchAll(PDO::FETCH_COLUMN);
+    foreach (attendance_data($config)['employees'] as $e) {
+      $pinRows[] = ['key' => emp_key($e['name']), 'name' => $e['name'], 'has' => in_array(emp_key($e['name']), $hasPin, true)];
+    }
   } catch (Throwable $e) {
     error_log($e->getMessage());
     $error = 'Could not load clock records.';
@@ -144,6 +196,46 @@ if (isset($_GET['log'])) {
   page_start('Clock Records', 'clock.php');
   ?>
   <h1>Clock Records</h1>
+  <h2>Employee PINs</h2>
+  <p class="muted">Kailangan ng PIN (4-6 na numero) ang bawat employee para makapag-clock. Ilagay ulit ang bagong PIN para palitan.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Employee</th><th>Status</th><th>Bagong PIN</th></tr></thead>
+      <tbody>
+        <?php foreach ($pinRows as $p): ?>
+          <tr>
+            <td><?= h($p['name']) ?></td>
+            <td><?= $p['has'] ? 'May PIN' : 'Wala pang PIN' ?></td>
+            <td>
+              <input class="pin-in" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" placeholder="PIN" data-k="<?= h($p['key']) ?>">
+              <button class="btn pin-save" type="button">Save</button>
+              <span class="pin-msg"></span>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+  <script>
+    document.querySelectorAll('.pin-save').forEach((b) => {
+      b.addEventListener('click', async () => {
+        const td = b.parentElement;
+        const inp = td.querySelector('.pin-in');
+        const out = td.querySelector('.pin-msg');
+        const r = await fetch('clock.php', {
+          method: 'POST',
+          body: new URLSearchParams({ csrf: <?= json_encode(csrf()) ?>, type: 'set_pin', emp: inp.dataset.k, pin: inp.value }),
+        });
+        const d = await r.json();
+        out.textContent = d.ok ? ' Na-save' : ' ' + (d.msg || 'Error');
+        if (d.ok) {
+          inp.value = '';
+          td.previousElementSibling.textContent = 'May PIN';
+        }
+      });
+    });
+  </script>
+  <h2>Mga Record</h2>
   <p class="muted">Pinakabagong 200 na clock-in/out mula sa Time Clock. Hiwalay ito sa Google Sheet at payroll.</p>
   <p><a class="btn" href="clock.php">Buksan ang Time Clock</a></p>
   <?php if ($error): ?><p class="alert"><?= h($error) ?></p><?php endif; ?>
@@ -215,7 +307,11 @@ $company = "Angel's Glass & Aluminum Services";
     <a class="clock-icon" href="index.php" aria-label="Dashboard">&#9881;</a>
   <?php endif; ?>
   <div class="clock-title"><?= h($company) ?></div>
-  <a class="clock-icon" href="clock.php?log=1" aria-label="Records">&#9776;</a>
+  <?php if ($isAdmin): ?>
+    <a class="clock-icon" href="clock.php?log=1" aria-label="Records">&#9776;</a>
+  <?php else: ?>
+    <span class="clock-icon"></span>
+  <?php endif; ?>
 </header>
 <?php if ($error): ?><p class="clock-error"><?= h($error) ?></p><?php endif; ?>
 
@@ -288,6 +384,7 @@ $company = "Angel's Glass & Aluminum Services";
           <b id="timer" data-since="<?= (int) $sel['since'] ?>">0:00:00</b>
         <?php endif; ?>
       </div>
+      <input id="pin" class="clock-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Ilagay ang PIN">
       <div class="clock-actions">
         <?php if ($sel['state'] === 'out'): ?>
           <button class="cb green wide" data-t="in">&#9654; Clock in</button>
@@ -341,6 +438,12 @@ $company = "Angel's Glass & Aluminum Services";
     }
     document.querySelectorAll('.cb').forEach((btn) => {
       btn.addEventListener('click', async () => {
+        const pin = document.getElementById('pin').value.trim();
+        if (!/^\d{4,6}$/.test(pin)) {
+          msg.className = 'clock-msg bad';
+          msg.textContent = 'Ilagay ang 4 hanggang 6 na numerong PIN.';
+          return;
+        }
         const all = document.querySelectorAll('.cb');
         all.forEach((b) => (b.disabled = true));
         msg.className = 'clock-msg';
@@ -349,6 +452,7 @@ $company = "Angel's Glass & Aluminum Services";
           csrf: <?= json_encode(csrf()) ?>,
           emp: <?= json_encode($sel['key']) ?>,
           type: btn.dataset.t,
+          pin,
           selfie: snapshot(),
         });
         try {
