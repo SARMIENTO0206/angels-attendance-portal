@@ -6,9 +6,11 @@ session_name('angels_portal');
 session_set_cookie_params(['httponly'=>true,'secure'=>!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off','samesite'=>'Lax']);
 session_start();
 $settingsFile=dirname(__DIR__).'/config/settings.php';
-if(!is_file($settingsFile)){http_response_code(503);exit('Setup required: copy config/settings.example.php to config/settings.php and configure it.');}
-$config=require $settingsFile;
-$localFile=dirname(__DIR__).'/config/local.json';
+define('DATA_DIR',rtrim((string)(getenv('DATA_DIR')?:dirname(__DIR__).'/config'),'/\\'));
+if(is_file($settingsFile)){$config=require $settingsFile;}
+elseif(getenv('SPREADSHEET_ID')){$config=['spreadsheet_id'=>getenv('SPREADSHEET_ID'),'timezone'=>getenv('TIMEZONE')?:'Asia/Manila','admin_username'=>getenv('ADMIN_USERNAME')?:'admin','admin_password_hash'=>(string)getenv('ADMIN_PASSWORD_HASH')];}
+else{http_response_code(503);exit('Setup required: copy config/settings.example.php to config/settings.php or set environment variables.');}
+$localFile=DATA_DIR.'/local.json';
 if(is_file($localFile)){$local=json_decode((string)file_get_contents($localFile),true);if(is_array($local))$config=array_replace($config,$local);}
 date_default_timezone_set($config['timezone']??'Asia/Manila');
 function h($value):string{return htmlspecialchars((string)$value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}

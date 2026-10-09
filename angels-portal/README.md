@@ -36,3 +36,11 @@ GitHub Pages **cannot** run PHP. Use GitHub to store the code and a PHP host (sh
 8. Change the default admin password, and delete unused service-account keys in Google Cloud.
 
 If a key or password was ever committed, rotate it (new key, new password) - deleting the file from Git history is not enough.
+
+## Deploy sa Railway
+
+1. Railway -> New Project -> Deploy from GitHub repo (uses the root Dockerfile).
+2. Variables: SPREADSHEET_ID, GOOGLE_CREDENTIALS_JSON (buong laman ng service-account JSON), ADMIN_PASSWORD_HASH (php -r "echo password_hash('PASSWORD', PASSWORD_DEFAULT);"). Optional: ADMIN_USERNAME, TIMEZONE.
+3. Settings -> Volumes -> mount path /data (dito naka-save ang Settings, password at employee photos).
+4. Settings -> Networking -> Generate Domain.
+5. I-share ang Google Sheet sa service account email bilang Viewer.

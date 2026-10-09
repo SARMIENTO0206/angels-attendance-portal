@@ -10,7 +10,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  elseif(strlen($new)<8)$msg='Dapat at least 8 characters ang bagong password.';
  elseif($new!==$cf)$msg='Hindi magkapareho ang bagong password at confirmation.';
  else{
-  $f=__DIR__.'/config/local.json';
+  $f=DATA_DIR.'/local.json';
   $cur=is_file($f)?(json_decode((string)file_get_contents($f),true)?:[]):[];
   $cur['admin_password_hash']=password_hash($new,PASSWORD_DEFAULT);
   if(file_put_contents($f,json_encode($cur,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE),LOCK_EX)!==false){$done=true;$_SESSION['fp_try']=0;}

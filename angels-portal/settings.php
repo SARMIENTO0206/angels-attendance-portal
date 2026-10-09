@@ -1,5 +1,5 @@
 <?php require __DIR__.'/lib/bootstrap.php';require_login();require __DIR__.'/lib/sheets.php';require __DIR__.'/lib/layout.php';
-$localFile=__DIR__.'/config/local.json';
+$localFile=DATA_DIR.'/local.json';
 $save=function(array $new)use($localFile){$cur=is_file($localFile)?(json_decode((string)file_get_contents($localFile),true)?:[]):[];$cur=array_merge($cur,$new);return file_put_contents($localFile,json_encode($cur,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE),LOCK_EX)!==false;};
 $clip=function($v,$n){return mb_substr(trim(strip_tags((string)$v)),0,$n);};
 if($_SERVER['REQUEST_METHOD']==='POST'){verify_csrf();$a=(string)($_POST['action']??'');$msg=['err','Hindi na-save.'];

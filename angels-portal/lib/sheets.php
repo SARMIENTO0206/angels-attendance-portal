@@ -3,8 +3,9 @@ declare(strict_types=1);
 function b64url(string $data):string{return rtrim(strtr(base64_encode($data),'+/','-_'),'=');}
 function sheets_token(array $config):string{
  $path=$config['service_account_json']??'';
- if(!$path||!is_file($path))throw new RuntimeException('Service account JSON not found.');
- $creds=json_decode(file_get_contents($path),true,512,JSON_THROW_ON_ERROR);
+ $raw=getenv('GOOGLE_CREDENTIALS_JSON');
+ if(!$raw){if(!$path||!is_file($path))throw new RuntimeException('Service account JSON not found.');$raw=file_get_contents($path);}
+ $creds=json_decode($raw,true,512,JSON_THROW_ON_ERROR);
  if(empty($creds['client_email'])||empty($creds['private_key']))throw new RuntimeException('Invalid service account JSON.');
  $now=time();$header=b64url(json_encode(['alg'=>'RS256','typ'=>'JWT']));
  $payload=b64url(json_encode(['iss'=>$creds['client_email'],'scope'=>'https://www.googleapis.com/auth/spreadsheets.readonly','aud'=>'https://oauth2.googleapis.com/token','iat'=>$now,'exp'=>$now+3500]));
