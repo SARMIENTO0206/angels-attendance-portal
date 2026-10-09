@@ -1,16 +1,33 @@
-<?php require __DIR__.'/lib/bootstrap.php';
-if(!empty($_SESSION['logged_in'])){header('Location: index.php');exit;}
-$error='';
-if($_SERVER['REQUEST_METHOD']==='POST'){
- verify_csrf();
- $username=(string)($_POST['username']??'');
- $pw=(string)($_POST['password']??'');
- if(hash_equals((string)$config['admin_username'],$username)&&password_verify($pw,(string)$config['admin_password_hash'])){
- session_regenerate_id(true);$_SESSION['logged_in']=true;header('Location: index.php');exit;
- }
- $error='Invalid username or password.';
+<?php require __DIR__ . '/lib/bootstrap.php';
+if (!empty($_SESSION['logged_in'])) {
+  header('Location: index.php');
+  exit();
 }
-?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login | Angels Portal</title><link rel="stylesheet" href="assets/style.css"></head><body class="lg-body">
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+  verify_csrf();
+  $username = (string) ($_POST['username'] ?? '');
+  $pw = (string) ($_POST['password'] ?? '');
+  if (
+    hash_equals((string) $config['admin_username'], $username) &&
+    password_verify($pw, (string) $config['admin_password_hash'])
+  ) {
+    session_regenerate_id(true);
+    $_SESSION['logged_in'] = true;
+    header('Location: index.php');
+    exit();
+  }
+  $error = 'Invalid username or password.';
+}
+?><!doctype html>
+  <html lang="en">
+  <head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Login | Angels Portal</title>
+  <link rel="stylesheet" href="assets/style.css">
+  </head>
+<body class="lg-body">
 <section class="lg-hero">
  <div class="lg-line"></div>
  <h2>ANGEL’S</h2>
@@ -26,8 +43,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  <img class="lg-logo" src="assets/logo.png" alt="Angel's logo">
  <h1>Admin Sign In</h1>
  <p class="lg-sub">Access your attendance and payroll dashboard</p>
- <?php if($error):?><div class="error"><?=h($error)?></div><?php endif;?>
- <form method="post"><input type="hidden" name="csrf" value="<?=h(csrf())?>">
+ <?php if ($error): ?><div class="error"><?= h($error) ?></div><?php endif; ?>
+ <form method="post"><input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
   <label>Username</label>
   <div class="lg-field"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><input name="username" required autocomplete="username" placeholder="Username"></div>
   <label>Password</label>
