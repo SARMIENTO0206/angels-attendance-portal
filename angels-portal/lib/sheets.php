@@ -6,6 +6,13 @@ function b64url(string $data): string
 }
 function sheets_token(array $config): string
 {
+  $cacheFile = DATA_DIR . '/cache-token.json';
+  if (is_file($cacheFile)) {
+    $c = json_decode((string) @file_get_contents($cacheFile), true);
+    if (is_array($c) && !empty($c['token']) && ($c['exp'] ?? 0) > time() + 60) {
+      return $c['token'];
+    }
+  }
   $path = $config['service_account_json'] ?? '';
   $raw = getenv('GOOGLE_CREDENTIALS_JSON');
   if (!$raw) {
@@ -52,6 +59,7 @@ function sheets_token(array $config): string
   if ($status !== 200 || empty($data['access_token'])) {
     throw new RuntimeException('Google authorization failed. Check credentials and server clock.');
   }
+  @file_put_contents($cacheFile, json_encode(['token' => $data['access_token'], 'exp' => $now + 3300]), LOCK_EX);
   return $data['access_token'];
 }
 function sheets_read(array $config, string $range): array
@@ -83,7 +91,23 @@ function sheets_read(array $config, string $range): array
   }
   return $data['values'] ?? [];
 }
-function attendance_data(array $config): array
+const ATTENDANCE_CACHE_TTL = 60;
+
+// Cached for a short time so switching pages is fast; pass $force = true (Refresh button) to bypass it.
+function attendance_data(array $config, bool $force = false): array
+{
+  $cacheFile = DATA_DIR . '/cache-attendance.json';
+  if (!$force && is_file($cacheFile) && time() - filemtime($cacheFile) < ATTENDANCE_CACHE_TTL) {
+    $cached = json_decode((string) @file_get_contents($cacheFile), true);
+    if (is_array($cached) && isset($cached['employees'])) {
+      return $cached;
+    }
+  }
+  $data = attendance_fetch($config);
+  @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
+  return $data;
+}
+function attendance_fetch(array $config): array
 {
   // Original tracker: B employee; E regular hours; F OT; I salary advance; J total pay; K:X statuses/hours.
   $rows = sheets_read($config, "'ATTENDANCE TRACKER'!B4:X200");

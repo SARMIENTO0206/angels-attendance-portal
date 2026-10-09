@@ -4,7 +4,7 @@ require __DIR__ . '/lib/sheets.php';
 $data = ['week' => '—', 'employees' => []];
 $error = '';
 try {
-  $data = attendance_data($config);
+  $data = attendance_data($config, isset($_GET['refresh']));
 } catch (Throwable $e) {
   error_log($e->getMessage());
   $error = 'Could not load Google Sheets data. Check setup, sharing, API access, and PHP error logs.';
@@ -95,7 +95,7 @@ page_start('Attendance', 'index.php');
   $start ? $start->format('F d') . ' – ' . (clone $start)->modify('+6 day')->format('F d, Y') : $data['week'],
 ) ?> <span class="pill blue">Live data from Google Sheets</span></p></div><div class="actions"><span class="updated">Last updated: <?= h(
    date('M j, Y g:i A'),
- ) ?></span><a class="refresh light" href="index.php">↻ Refresh</a><form method="post" action="logout.php"><input type="hidden" name="csrf" value="<?= h(
+ ) ?></span><a class="refresh light" href="index.php?refresh=1">↻ Refresh</a><form method="post" action="logout.php"><input type="hidden" name="csrf" value="<?= h(
   csrf(),
 ) ?>"><button class="logout">Log out</button></form></div></header><?php if (
   $error

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   } elseif ($a === 'test') {
     try {
-      $d = attendance_data($config);
+      $d = attendance_data($config, true);
       $msg = ['ok', 'Connected: ' . count($d['employees']) . ' employees, week ' . $d['week']];
     } catch (Throwable $e) {
       error_log($e->getMessage());

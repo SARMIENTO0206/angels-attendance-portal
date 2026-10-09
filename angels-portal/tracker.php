@@ -5,7 +5,7 @@ require __DIR__ . '/lib/layout.php';
 $data = ['week' => '—', 'employees' => []];
 $error = '';
 try {
-  $data = attendance_data($config);
+  $data = attendance_data($config, isset($_GET['refresh']));
 } catch (Throwable $e) {
   error_log($e->getMessage());
   $error = 'Could not load Google Sheets data. Check setup, sharing, API access, and PHP error logs.';
@@ -41,7 +41,7 @@ page_start('Weekly Tracker', 'tracker.php');
 ?>
 <header><div><span class="eyebrow">EMPLOYEE MANAGEMENT</span><h1>Weekly Attendance Tracker</h1><p>Week of <?= h(
   $start ? $start->format('F d') . ' – ' . (clone $start)->modify('+6 day')->format('F d, Y') : $data['week'],
-) ?> <span class="pill blue">Live data from Google Sheets</span></p></div><div class="actions"><a class="refresh light" href="tracker.php">↻ Refresh</a></div></header>
+) ?> <span class="pill blue">Live data from Google Sheets</span></p></div><div class="actions"><a class="refresh light" href="tracker.php?refresh=1">↻ Refresh</a></div></header>
 <?php if ($error): ?><div class="error"><?= h($error) ?></div><?php endif; ?>
 <section class="panel" id="tracker"><div class="panel-head"><div><h2>Weekly Attendance Tracker</h2><p>View only — changes must be made in Google Sheets</p></div></div><div class="table-scroll"><table><thead><tr><th>#</th><th class="emp">Employee</th><th>Time In</th><th>Time Out</th><?php for (
   $i = 0;

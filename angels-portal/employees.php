@@ -5,7 +5,7 @@ require __DIR__ . '/lib/layout.php';
 $data = ['week' => '—', 'employees' => []];
 $error = '';
 try {
-  $data = attendance_data($config);
+  $data = attendance_data($config, isset($_GET['refresh']));
 } catch (Throwable $e) {
   error_log($e->getMessage());
   $error = 'Could not load Google Sheets data.';
