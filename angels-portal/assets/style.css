@@ -1786,3 +1786,10 @@ html {
     text-align: center;
   }
 }
+@media (min-width: 761px) {
+  .lg-body {
+    align-items: flex-start;
+    padding-top: max(24px, 7vh);
+    box-sizing: border-box;
+  }
+}
