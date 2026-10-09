@@ -188,8 +188,10 @@ $company = "Angel's Glass & Aluminum Services";
 <header class="clock-top">
   <?php if ($sel): ?>
     <a class="clock-icon" href="clock.php" aria-label="Back">&larr;</a>
+  <?php elseif ($isAdmin): ?>
+    <a class="clock-icon" href="index.php" aria-label="Back to modules" title="Back to modules">&larr;</a>
   <?php else: ?>
-    <a class="clock-icon" href="index.php" aria-label="Dashboard">&#9881;</a>
+    <span class="clock-icon"></span>
   <?php endif; ?>
   <div class="clock-title"><?= h($company) ?></div>
   <?php if ($isAdmin): ?>
