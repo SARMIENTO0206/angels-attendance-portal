@@ -84,6 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $msg = ['ok', 'Record added.'];
       }
     } elseif ($act === 'settings') {
+      clock_set($db, 'require_pin', !empty($_POST['require_pin']) ? '1' : '0');
       clock_set($db, 'require_selfie', !empty($_POST['require_selfie']) ? '1' : '0');
       clock_set($db, 'retention_days', (string) max(0, min(3650, (int) ($_POST['retention_days'] ?? 0))));
       $msg = ['ok', 'Settings saved.'];
@@ -107,6 +108,7 @@ try {
   $retention = (int) clock_setting($db, 'retention_days', '0');
   clock_purge_selfies($db, $retention);
   $reqSelfie = clock_setting($db, 'require_selfie', '0') === '1';
+  $reqPin = clock_setting($db, 'require_pin', '1') === '1';
   $hasPin = $db->query('SELECT emp_key FROM clock_pins')->fetchAll(PDO::FETCH_COLUMN);
   foreach ($employees as $e) {
     $k = emp_key($e['name']);
@@ -324,6 +326,7 @@ page_start('Clock Admin', 'clock-admin.php');
   <form method="post" class="ca-form">
     <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
     <input type="hidden" name="action" value="settings">
+    <label class="ca-check"><input type="checkbox" name="require_pin" value="1" <?= $reqPin ? 'checked' : '' ?>> Require PIN to clock in/out <small class="muted">(if off, a selfie is required automatically)</small></label>
     <label class="ca-check"><input type="checkbox" name="require_selfie" value="1" <?= $reqSelfie ? 'checked' : '' ?>> Require a selfie for every clock action</label>
     <label>Delete selfies older than (days, 0 = keep forever)
       <input type="number" name="retention_days" min="0" max="3650" value="<?= (int) $retention ?>" class="ca-num">

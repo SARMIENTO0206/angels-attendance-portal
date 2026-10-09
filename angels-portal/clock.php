@@ -115,33 +115,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $db = clock_db();
     $db->exec('BEGIN IMMEDIATE');
     $txOpen = true;
-    $ps = $db->prepare('SELECT pin_hash, fails, locked_until FROM clock_pins WHERE emp_key = ?');
-    $ps->execute([$key]);
-    $pr = $ps->fetch(PDO::FETCH_ASSOC);
-    if (!$pr) {
-      json_out(['ok' => false, 'msg' => 'No PIN set yet. Ask the admin to set one.'], 403);
+    $pinOn = clock_setting($db, 'require_pin', '1') === '1';
+    if ($pinOn) {
+      $ps = $db->prepare('SELECT pin_hash, fails, locked_until FROM clock_pins WHERE emp_key = ?');
+      $ps->execute([$key]);
+      $pr = $ps->fetch(PDO::FETCH_ASSOC);
+      if (!$pr) {
+        json_out(['ok' => false, 'msg' => 'No PIN set yet. Ask the admin to set one.'], 403);
+      }
+      if ((int) $pr['locked_until'] > time()) {
+        $mins = (int) ceil(((int) $pr['locked_until'] - time()) / 60);
+        json_out(['ok' => false, 'msg' => "Too many wrong PIN attempts. Try again in $mins minute(s)."], 429);
+      }
+      if (!password_verify((string) ($_POST['pin'] ?? ''), $pr['pin_hash'])) {
+        $fails = (int) $pr['fails'] + 1;
+        $lock = $fails >= 5 ? time() + 300 : 0;
+        $db->prepare('UPDATE clock_pins SET fails = ?, locked_until = ? WHERE emp_key = ?')->execute([
+          $lock ? 0 : $fails,
+          $lock,
+          $key,
+        ]);
+        json_out(['ok' => false, 'msg' => 'Incorrect PIN.'], 403);
+      }
+      $db->prepare('UPDATE clock_pins SET fails = 0, locked_until = 0 WHERE emp_key = ?')->execute([$key]);
     }
-    if ((int) $pr['locked_until'] > time()) {
-      $mins = (int) ceil(((int) $pr['locked_until'] - time()) / 60);
-      json_out(['ok' => false, 'msg' => "Too many wrong PIN attempts. Try again in $mins minute(s)."], 429);
-    }
-    if (!password_verify((string) ($_POST['pin'] ?? ''), $pr['pin_hash'])) {
-      $fails = (int) $pr['fails'] + 1;
-      $lock = $fails >= 5 ? time() + 300 : 0;
-      $db->prepare('UPDATE clock_pins SET fails = ?, locked_until = ? WHERE emp_key = ?')->execute([
-        $lock ? 0 : $fails,
-        $lock,
-        $key,
-      ]);
-      json_out(['ok' => false, 'msg' => 'Incorrect PIN.'], 403);
-    }
-    $db->prepare('UPDATE clock_pins SET fails = 0, locked_until = 0 WHERE emp_key = ?')->execute([$key]);
     $cur = clock_state($db, $key)['state'];
     $allowed = ['out' => ['in'], 'in' => ['break_start', 'out'], 'break' => ['break_end', 'out']];
     if (!in_array($type, $allowed[$cur], true)) {
       json_out(['ok' => false, 'msg' => 'This action is not allowed for the current status.'], 409);
     }
-    if ($img === null && clock_setting($db, 'require_selfie', '0') === '1') {
+    if ($img === null && (!$pinOn || clock_setting($db, 'require_selfie', '0') === '1')) {
       json_out(['ok' => false, 'msg' => 'A selfie is required. Allow camera access and try again.'], 422);
     }
     $ins = $db->prepare('INSERT INTO clock_events (emp_key, name, type, ts, selfie) VALUES (?, ?, ?, ?, ?)');
@@ -174,8 +177,10 @@ try {
   $error = 'Could not load Google Sheets data.';
 }
 $list = [];
+$pinRequired = true;
 try {
   $db = clock_db();
+  $pinRequired = clock_setting($db, 'require_pin', '1') === '1';
   if (random_int(1, 20) === 1) {
     clock_purge_selfies($db, (int) clock_setting($db, 'retention_days', '0'));
   }
@@ -295,7 +300,9 @@ $company = "Angel's Glass & Aluminum Services";
           <b id="timer" data-since="<?= (int) $sel['since'] ?>">0:00:00</b>
         <?php endif; ?>
       </div>
+      <?php if ($pinRequired): ?>
       <input id="pin" class="clock-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Enter PIN">
+      <?php endif; ?>
       <div class="clock-actions">
         <?php if ($sel['state'] === 'out'): ?>
           <button class="cb green wide" data-t="in">&#9654; Clock in</button>
@@ -354,8 +361,9 @@ $company = "Angel's Glass & Aluminum Services";
     }
     document.querySelectorAll('.cb').forEach((btn) => {
       btn.addEventListener('click', async () => {
-        const pin = document.getElementById('pin').value.trim();
-        if (!/^\d{4,6}$/.test(pin)) {
+        const pinEl = document.getElementById('pin');
+        const pin = pinEl ? pinEl.value.trim() : '';
+        if (pinEl && !/^\d{4,6}$/.test(pin)) {
           msg.className = 'clock-msg bad';
           msg.textContent = 'Enter your 4 to 6 digit PIN.';
           return;
