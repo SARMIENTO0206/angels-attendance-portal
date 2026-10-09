@@ -1681,3 +1681,99 @@ html {
   gap: 14px;
   align-items: center;
 }
+.ca-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin: 18px 0;
+}
+.ca-stats article {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px;
+}
+.ca-stats b {
+  display: block;
+  font-size: 30px;
+  margin: 2px 0;
+}
+.ca-stats small {
+  color: #9ba9b9;
+}
+.ca-ic {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  font-size: 24px;
+  background: #e8f0ff;
+}
+.ca-ic.g {
+  background: #e3f6ec;
+}
+.ca-ic.p {
+  background: #efe9ff;
+}
+.ca-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 18px;
+  align-items: start;
+  margin-bottom: 18px;
+}
+.ca-right {
+  display: grid;
+  gap: 18px;
+}
+.ca-card {
+  padding: 22px 24px;
+  margin-bottom: 18px;
+}
+.ca-grid .ca-card,
+.ca-right .ca-card {
+  margin-bottom: 0;
+}
+.ca-card h2,
+.ca-card h3 {
+  margin: 0 0 4px;
+}
+.ca-card > .muted {
+  margin: 0 0 12px;
+}
+.ca-form a {
+  align-self: center;
+  color: #1d5fc0;
+  font-size: 13px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.ca-form a:hover {
+  text-decoration: underline;
+}
+.ca-bottom {
+}
+.ca-danger {
+  border-color: #f3c9c4;
+}
+.ca-danger h2 {
+  color: #c0392b;
+}
+.ca-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: #aab4c3;
+}
+.ca-dot.on {
+  background: #1faa66;
+}
+@media (max-width: 900px) {
+  .ca-stats,
+  .ca-grid {
+    grid-template-columns: 1fr;
+  }
+}

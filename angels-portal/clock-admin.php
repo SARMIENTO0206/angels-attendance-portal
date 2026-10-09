@@ -171,27 +171,19 @@ $dtVal = fn($ts) => date('Y-m-d\TH:i', (int) $ts);
 page_start('Clock Admin', 'clock-admin.php');
 ?>
 <h1>Clock Admin</h1>
-<p class="muted">Manage employee PINs and review Time Clock records. Separate from the Google Sheet and payroll.</p>
+<p class="muted">Manage employee PINs and review time clock records. Separate from the Google Sheet and payroll.</p>
 <?php if ($error): ?><p class="alert"><?= h($error) ?></p><?php endif; ?>
 <?php if ($flash): ?><div class="<?= $flash[0] === 'ok' ? 'okmsg' : 'error' ?>"><?= h($flash[1]) ?></div><?php endif; ?>
 
-<h2>Settings</h2>
-<form method="post" class="ca-form">
-  <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
-  <input type="hidden" name="action" value="settings">
-  <label class="ca-check"><input type="checkbox" name="require_selfie" value="1" <?= $reqSelfie ? 'checked' : '' ?>> Require a selfie for every clock action</label>
-  <label>Delete selfies older than (days, 0 = keep forever)
-    <input type="number" name="retention_days" min="0" max="3650" value="<?= (int) $retention ?>" class="ca-num">
-  </label>
-  <button class="btn" type="submit">Save settings</button>
-</form>
-<form method="post" class="ca-form">
-  <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
-  <input type="hidden" name="action" value="purge">
-  <button class="btn" type="submit">Delete old selfies now</button>
-  <span class="muted">Only the photos are removed. The clock records stay.</span>
-</form>
+<?php $pinsSet = count(array_filter($pinRows, fn($p) => $p['has'])); ?>
+<div class="ca-stats">
+  <article class="panel"><span class="ca-ic b">&#128101;</span><div><span class="stat-label">Total Employees</span><b><?= count($pinRows) ?></b><small>Active employees</small></div></article>
+  <article class="panel"><span class="ca-ic g">&#128274;</span><div><span class="stat-label">PINs Set</span><b><?= (int) $pinsSet ?></b><small>of <?= count($pinRows) ?> employees</small></div></article>
+  <article class="panel"><span class="ca-ic p">&#128196;</span><div><span class="stat-label">Clock Records</span><b><?= (int) $total ?></b><small>records in selected range</small></div></article>
+</div>
 
+<div class="ca-grid">
+<section class="panel ca-card">
 <h2>Employee PINs</h2>
 <p class="muted">Each employee needs a PIN (4-6 digits) to clock in. Enter a new PIN to replace an existing one.</p>
 <div class="table-wrap">
@@ -201,7 +193,7 @@ page_start('Clock Admin', 'clock-admin.php');
       <?php foreach ($pinRows as $p): ?>
         <tr>
           <td><?= h($p['name']) ?></td>
-          <td><?= $p['has'] ? 'PIN set' : 'No PIN yet' ?></td>
+          <td><span class="ca-dot <?= $p['has'] ? 'on' : '' ?>"></span><?= $p['has'] ? 'PIN set' : 'No PIN yet' ?></td>
           <td>
             <input class="pin-in" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" placeholder="PIN" data-k="<?= h($p['key']) ?>">
             <button class="btn pin-save" type="button">Save</button>
@@ -212,8 +204,12 @@ page_start('Clock Admin', 'clock-admin.php');
     </tbody>
   </table>
 </div>
+</section>
 
+<div class="ca-right">
+<section class="panel ca-card">
 <h2>Records</h2>
+<p class="muted">View and filter time clock records.</p>
 <form method="get" class="ca-form">
   <label>Employee
     <select name="emp">
@@ -228,6 +224,7 @@ page_start('Clock Admin', 'clock-admin.php');
 </form>
 
 <h3>Daily summary</h3>
+<p class="muted">A quick view of records for the selected date range.</p>
 <div class="table-wrap">
   <table>
     <thead><tr><th>Date</th><th>Employee</th><th>First in</th><th>Last out</th><th>Work time</th><th>Break</th></tr></thead>
@@ -247,7 +244,10 @@ page_start('Clock Admin', 'clock-admin.php');
   </table>
 </div>
 
-<h3>Add a missed record</h3>
+</section>
+<section class="panel ca-card">
+<h2>Add a Missed Record</h2>
+<p class="muted">Manually add a clock in, break or clock out record for an employee.</p>
 <form method="post" class="ca-form">
   <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
   <input type="hidden" name="action" value="add">
@@ -266,7 +266,12 @@ page_start('Clock Admin', 'clock-admin.php');
   <button class="btn" type="submit">Add record</button>
 </form>
 
-<h3>All records <span class="muted">(<?= (int) $total ?>)</span></h3>
+</section>
+</div>
+</div>
+
+<section class="panel ca-card ca-wide">
+<h2>All Records <span class="muted">(<?= (int) $total ?>)</span></h2>
 <div class="table-wrap">
   <table>
     <thead><tr><th>Date and time</th><th>Employee</th><th>Action</th><th>Selfie</th><th>Fix</th></tr></thead>
@@ -310,11 +315,38 @@ page_start('Clock Admin', 'clock-admin.php');
     <?php if ($page < $pages): ?><a href="?<?= h($qs(['page' => $page + 1])) ?>">Older &rarr;</a><?php endif; ?>
   </p>
 <?php endif; ?>
-<form method="post" class="ca-form" onsubmit="return confirm('Delete ALL clock records and selfies? This cannot be undone.');">
-  <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
-  <input type="hidden" name="action" value="clear_all">
-  <button class="btn danger" type="submit">Delete all records (test data)</button>
-</form>
+</section>
+
+<div class="ca-grid ca-bottom">
+<section class="panel ca-card">
+  <h2>Settings</h2>
+  <p class="muted">Configure time clock options.</p>
+  <form method="post" class="ca-form">
+    <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
+    <input type="hidden" name="action" value="settings">
+    <label class="ca-check"><input type="checkbox" name="require_selfie" value="1" <?= $reqSelfie ? 'checked' : '' ?>> Require a selfie for every clock action</label>
+    <label>Delete selfies older than (days, 0 = keep forever)
+      <input type="number" name="retention_days" min="0" max="3650" value="<?= (int) $retention ?>" class="ca-num">
+    </label>
+    <button class="btn" type="submit">Save settings</button>
+  </form>
+  <form method="post" class="ca-form">
+    <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
+    <input type="hidden" name="action" value="purge">
+    <button class="btn" type="submit">Delete old selfies now</button>
+    <span class="muted">Only the photos are removed. The clock records stay.</span>
+  </form>
+</section>
+<section class="panel ca-card ca-danger">
+  <h2>Danger Zone</h2>
+  <p class="muted">This will permanently delete all time clock records and selfies. PINs are kept. This action cannot be undone.</p>
+  <form method="post" class="ca-form" onsubmit="return confirm('Delete ALL clock records and selfies? This cannot be undone.');">
+    <input type="hidden" name="csrf" value="<?= h(csrf()) ?>">
+    <input type="hidden" name="action" value="clear_all">
+    <button class="btn danger" type="submit">Delete all records (test data)</button>
+  </form>
+</section>
+</div>
 <div class="selfie-modal" id="selfieModal" hidden>
   <button type="button" class="selfie-x" id="selfieX" aria-label="Close">&times;</button>
   <img id="selfieBig" alt="Selfie">
