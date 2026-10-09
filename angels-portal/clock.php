@@ -222,7 +222,12 @@ $company = "Angel's Glass & Aluminum Services";
 <?php if ($error): ?><p class="clock-error"><?= h($error) ?></p><?php endif; ?>
 
 <?php if (!$sel): ?>
-  <main class="clock-main">
+  <main class="clock-main clock-card">
+    <div class="clock-head">
+      <span class="clock-logo">&#128339;</span>
+      <h1>Employee Time Clock</h1>
+      <p>Select your name to continue</p>
+    </div>
     <input id="q" class="clock-search" type="search" placeholder="Search for an employee" autocomplete="off">
     <div class="clock-tabs" id="tabs">
       <button class="on" data-f="all">All</button>

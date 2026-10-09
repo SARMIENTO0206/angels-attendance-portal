@@ -159,6 +159,95 @@
   color: #a7afbd;
   line-height: 1;
 }
+.clock-body {
+  background: radial-gradient(1200px 500px at 0% 20%, #e9eef7 0, transparent 60%), radial-gradient(900px 500px at 100% 40%, #e6ecf6 0, transparent 60%), #f6f8fc;
+}
+.clock-card {
+  max-width: 620px;
+  margin: 16px auto 28px;
+  padding: 22px 28px 26px;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 10px 40px rgba(28, 41, 64, 0.1);
+}
+.clock-head {
+  text-align: center;
+  margin-bottom: 18px;
+}
+.clock-logo {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #e9eff9;
+  font-size: 22px;
+}
+.clock-head h1 {
+  margin: 8px 0 2px;
+  font-size: 28px;
+  color: #14264d;
+}
+.clock-head p {
+  margin: 0;
+  color: #6b7a96;
+  font-size: 15px;
+}
+.clock-card .clock-search {
+  padding-left: 44px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%236b7a96' stroke-width='2' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 14px center;
+}
+.clock-card .clock-tabs button.on {
+  background: #1f3560;
+}
+.clock-card .clock-count {
+  font-size: 14px;
+  color: #1f3560;
+  margin: 16px 2px 8px;
+}
+.clock-card .clock-list li {
+  margin-bottom: 8px;
+}
+.clock-card .clock-list a {
+  padding: 6px 14px 6px 10px;
+  border: 1px solid #e6ebf3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(28, 41, 64, 0.05);
+}
+.clock-card .clock-list a:hover {
+  background: #f5f8fd;
+}
+.clock-card .clock-av {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  background: #dfe5ef;
+  color: #1c2940;
+}
+.clock-card .clock-av::after {
+  width: 12px;
+  height: 12px;
+}
+.clock-card .clock-name {
+  font-size: 15px;
+  color: #1c2940;
+}
+.clock-card .clock-chev {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f0f3f9;
+  font-size: 20px;
+}
+@media (max-width: 640px) {
+  .clock-card {
+    margin: 8px;
+    padding: 16px;
+  }
+}
 .clock-detail {
   display: flex;
   flex-direction: column;
