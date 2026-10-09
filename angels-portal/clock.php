@@ -124,18 +124,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       }
     }
     if ($name === null) {
-      json_out(['ok' => false, 'msg' => 'Hindi nahanap ang employee.'], 404);
+      json_out(['ok' => false, 'msg' => 'Employee not found.'], 404);
     }
     $db = clock_db();
     $ps = $db->prepare('SELECT pin_hash, fails, locked_until FROM clock_pins WHERE emp_key = ?');
     $ps->execute([$key]);
     $pr = $ps->fetch(PDO::FETCH_ASSOC);
     if (!$pr) {
-      json_out(['ok' => false, 'msg' => 'Wala pang PIN. Magpa-set sa admin.'], 403);
+      json_out(['ok' => false, 'msg' => 'No PIN set yet. Ask the admin to set one.'], 403);
     }
     if ((int) $pr['locked_until'] > time()) {
       $mins = (int) ceil(((int) $pr['locked_until'] - time()) / 60);
-      json_out(['ok' => false, 'msg' => "Masyadong maraming maling PIN. Subukan ulit pagkalipas ng $mins minuto."], 429);
+      json_out(['ok' => false, 'msg' => "Too many wrong PIN attempts. Try again in $mins minute(s)."], 429);
     }
     if (!password_verify((string) ($_POST['pin'] ?? ''), $pr['pin_hash'])) {
       $fails = (int) $pr['fails'] + 1;
@@ -145,13 +145,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lock,
         $key,
       ]);
-      json_out(['ok' => false, 'msg' => 'Maling PIN.'], 403);
+      json_out(['ok' => false, 'msg' => 'Incorrect PIN.'], 403);
     }
     $db->prepare('UPDATE clock_pins SET fails = 0, locked_until = 0 WHERE emp_key = ?')->execute([$key]);
     $cur = clock_state($db, $key)['state'];
     $allowed = ['out' => ['in'], 'in' => ['break_start', 'out'], 'break' => ['break_end', 'out']];
     if (!in_array($type, $allowed[$cur], true)) {
-      json_out(['ok' => false, 'msg' => 'Hindi pwede ang action na ito sa kasalukuyang status.'], 409);
+      json_out(['ok' => false, 'msg' => 'This action is not allowed for the current status.'], 409);
     }
     $img = null;
     if (!empty($_POST['selfie'])) {
@@ -171,7 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     json_out(['ok' => true]);
   } catch (Throwable $e) {
     error_log($e->getMessage());
-    json_out(['ok' => false, 'msg' => 'May error sa server. Subukan ulit.'], 500);
+    json_out(['ok' => false, 'msg' => 'Server error. Please try again.'], 500);
   }
 }
 
@@ -197,15 +197,15 @@ if (isset($_GET['log'])) {
   ?>
   <h1>Clock Records</h1>
   <h2>Employee PINs</h2>
-  <p class="muted">Kailangan ng PIN (4-6 na numero) ang bawat employee para makapag-clock. Ilagay ulit ang bagong PIN para palitan.</p>
+  <p class="muted">Each employee needs a PIN (4-6 digits) to clock in. Enter a new PIN to replace an existing one.</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Employee</th><th>Status</th><th>Bagong PIN</th></tr></thead>
+      <thead><tr><th>Employee</th><th>Status</th><th>New PIN</th></tr></thead>
       <tbody>
         <?php foreach ($pinRows as $p): ?>
           <tr>
             <td><?= h($p['name']) ?></td>
-            <td><?= $p['has'] ? 'May PIN' : 'Wala pang PIN' ?></td>
+            <td><?= $p['has'] ? 'PIN set' : 'No PIN yet' ?></td>
             <td>
               <input class="pin-in" type="password" inputmode="numeric" maxlength="6" pattern="\d{4,6}" placeholder="PIN" data-k="<?= h($p['key']) ?>">
               <button class="btn pin-save" type="button">Save</button>
@@ -227,21 +227,21 @@ if (isset($_GET['log'])) {
           body: new URLSearchParams({ csrf: <?= json_encode(csrf()) ?>, type: 'set_pin', emp: inp.dataset.k, pin: inp.value }),
         });
         const d = await r.json();
-        out.textContent = d.ok ? ' Na-save' : ' ' + (d.msg || 'Error');
+        out.textContent = d.ok ? ' Saved' : ' ' + (d.msg || 'Error');
         if (d.ok) {
           inp.value = '';
-          td.previousElementSibling.textContent = 'May PIN';
+          td.previousElementSibling.textContent = 'PIN set';
         }
       });
     });
   </script>
-  <h2>Mga Record</h2>
-  <p class="muted">Pinakabagong 200 na clock-in/out mula sa Time Clock. Hiwalay ito sa Google Sheet at payroll.</p>
-  <p><a class="btn" href="clock.php">Buksan ang Time Clock</a></p>
+  <h2>Records</h2>
+  <p class="muted">Latest 200 clock events from the Time Clock. Separate from the Google Sheet and payroll.</p>
+  <p><a class="btn" href="clock.php">Open Time Clock</a></p>
   <?php if ($error): ?><p class="alert"><?= h($error) ?></p><?php endif; ?>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Petsa at oras</th><th>Employee</th><th>Action</th><th>Selfie</th></tr></thead>
+      <thead><tr><th>Date and time</th><th>Employee</th><th>Action</th><th>Selfie</th></tr></thead>
       <tbody>
         <?php foreach ($rows as $r): ?>
           <tr>
@@ -255,7 +255,7 @@ if (isset($_GET['log'])) {
             </td>
           </tr>
         <?php endforeach; ?>
-        <?php if (!$rows): ?><tr><td colspan="4">Wala pang records.</td></tr><?php endif; ?>
+        <?php if (!$rows): ?><tr><td colspan="4">No records yet.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>
@@ -384,7 +384,7 @@ $company = "Angel's Glass & Aluminum Services";
           <b id="timer" data-since="<?= (int) $sel['since'] ?>">0:00:00</b>
         <?php endif; ?>
       </div>
-      <input id="pin" class="clock-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Ilagay ang PIN">
+      <input id="pin" class="clock-pin" type="password" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="Enter PIN">
       <div class="clock-actions">
         <?php if ($sel['state'] === 'out'): ?>
           <button class="cb green wide" data-t="in">&#9654; Clock in</button>
@@ -412,7 +412,7 @@ $company = "Angel's Glass & Aluminum Services";
       })
       .catch(() => {
         video.hidden = true;
-        document.getElementById('hint').textContent = 'Walang access sa camera. Makakapag-clock pa rin nang walang selfie.';
+        document.getElementById('hint').textContent = 'Camera not available. You can still clock without a selfie.';
         const fb = document.getElementById('fallback');
         if (fb) fb.hidden = false;
       });
@@ -441,13 +441,13 @@ $company = "Angel's Glass & Aluminum Services";
         const pin = document.getElementById('pin').value.trim();
         if (!/^\d{4,6}$/.test(pin)) {
           msg.className = 'clock-msg bad';
-          msg.textContent = 'Ilagay ang 4 hanggang 6 na numerong PIN.';
+          msg.textContent = 'Enter your 4 to 6 digit PIN.';
           return;
         }
         const all = document.querySelectorAll('.cb');
         all.forEach((b) => (b.disabled = true));
         msg.className = 'clock-msg';
-        msg.textContent = 'Sine-save...';
+        msg.textContent = 'Saving...';
         const body = new URLSearchParams({
           csrf: <?= json_encode(csrf()) ?>,
           emp: <?= json_encode($sel['key']) ?>,
@@ -463,10 +463,10 @@ $company = "Angel's Glass & Aluminum Services";
             return;
           }
           msg.className = 'clock-msg bad';
-          msg.textContent = d.msg || 'Hindi na-save.';
+          msg.textContent = d.msg || 'Could not save.';
         } catch (e) {
           msg.className = 'clock-msg bad';
-          msg.textContent = 'Walang koneksyon. Subukan ulit.';
+          msg.textContent = 'No connection. Please try again.';
         }
         all.forEach((b) => (b.disabled = false));
       });
